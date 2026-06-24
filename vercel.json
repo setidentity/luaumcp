@@ -1,0 +1,11 @@
+{
+  "functions": {
+    "api/run.mjs": {
+      "maxDuration": 30,
+      "includeFiles": "node_modules/wasmoon/dist/glue.wasm"
+    },
+    "api/code.mjs": {
+      "maxDuration": 10
+    }
+  }
+}

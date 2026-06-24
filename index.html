@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>luaumcp</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0 }
+html, body { height: 100%; overflow: hidden; background: #171717 }
+body {
+  display: flex;
+  flex-direction: column
+}
+.CodeMirror {
+  flex: 1;
+  font-size: 0.875rem
+}
+.cm-s-default.CodeMirror { background: #171717 }
+.cm-s-default .CodeMirror-gutters { background: #171717; border-right: 1px solid #2d2d2d }
+.cm-s-default .CodeMirror-linenumber { color: #666 }
+.cm-s-default .cm-keyword { color: #569cd6 }
+.cm-s-default .cm-string { color: #ce9178 }
+.cm-s-default .cm-number { color: #b5cea8 }
+.cm-s-default .cm-comment { color: #6a9955 }
+.cm-s-default .cm-builtin { color: #569cd6 }
+.cm-s-default .cm-atom { color: #569cd6 }
+.cm-s-default .cm-def { color: #dcdcaa }
+#keybar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0.3rem 0.5rem;
+  flex-shrink: 0
+}
+#keydisp {
+  font-family: 'sf mono', 'fira code', 'consolas', monospace;
+  font-size: 0.8125rem;
+  color: #d4d4d4;
+  background: transparent;
+  border: none;
+  padding: 0.15rem 0.3rem;
+  cursor: pointer;
+  filter: blur(5px);
+  transition: filter 0.2s;
+  user-select: none
+}
+#keydisp:hover {
+  filter: none
+}
+button.sm {
+  background: transparent; color: #888; border: none; border-radius: 3px;
+  padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer;
+  transition: transform 0.15s
+}
+button.sm:hover { color: #d4d4d4; transform: scale(1.1) }
+#bar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  flex-shrink: 0
+}
+#bar button {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  width: 48px;
+  height: 48px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center
+}
+#bar button svg { fill: #888; transition: fill 0.15s, transform 0.15s }
+#bar button:hover svg { fill: #d4d4d4; transform: scale(1.2) }
+#bot {
+  flex: 0 0 35%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 1px solid #3a3a3a
+}
+#cheader {
+  display: flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  flex-shrink: 0
+}
+#cheader .cl {
+  font-size: 0.75rem;
+  color: #666
+}
+#cclr {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto
+}
+#cclr svg { fill: #888; transition: fill 0.15s, transform 0.15s }
+#cclr:hover svg { fill: #d4d4d4; transform: scale(1.2) }
+#consoleview {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.25rem 0;
+  font-family: 'sf mono', 'fira code', 'consolas', monospace;
+  font-size: 0.8125rem;
+  line-height: 1.5
+}
+.lentry {
+  padding: 0.0625rem 0.75rem;
+  white-space: pre-wrap;
+  word-break: break-all
+}
+.lentry .ts { color: #555 }
+.lentry.output { color: #d4d4d4 }
+.lentry.warning { color: #d7ba7d }
+.lentry.error { color: #f44747 }
+.lentry.info { color: #569cd6 }
+#toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #2d2d2d;
+  border: 1px solid #3c3c3c;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  pointer-events: none;
+  z-index: 999
+}
+#toast.show {
+  opacity: 1;
+  transform: translateY(0)
+}
+#toast img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #2b2b2b
+}
+#toast .tn {
+  font-size: 0.875rem;
+  color: #d4d4d4
+}
+#toast .tu {
+  font-size: 0.75rem;
+  color: #888
+}
+</style>
+</head>
+<body>
+<div id="toast">
+  <img id="tavatar" src="" alt="">
+  <div>
+    <div class="tn" id="tdisplay"></div>
+    <div class="tu" id="tuser"></div>
+  </div>
+</div>
+<div id="keybar">
+  <span id="keydisp"></span>
+  <button id="newkeybtn" class="sm">regenerate</button>
+</div>
+<textarea id="editor">print("hello from luaumcp!")</textarea>
+<div id="bar">
+  <button id="runbtn" title="execute">
+    <svg viewBox="0 0 24 24" width="26" height="26">
+      <path d="M17.222 8.685a1.5 1.5 0 0 1 0 2.628l-10 5.498A1.5 1.5 0 0 1 5 15.496V4.502a1.5 1.5 0 0 1 2.223-1.314z"/>
+    </svg>
+  </button>
+  <button id="clrbtn" title="clear editor">
+    <svg viewBox="0 0 24 24" width="26" height="26">
+      <path d="M11.197 2.44a1.5 1.5 0 0 1 2.121 0l4.243 4.242a1.5 1.5 0 0 1 0 2.121L9.364 17H14.5a.5.5 0 1 1 0 1H7.82a1.5 1.5 0 0 1-1.14-.437L2.437 13.32a1.5 1.5 0 0 1 0-2.121zM9.781 15.168l-4.95-4.95l-1.687 1.687a.5.5 0 0 0 0 .707l4.243 4.243a.5.5 0 0 0 .707 0z"/>
+    </svg>
+  </button>
+</div>
+<div id="bot">
+  <div id="cheader">
+    <span class="cl">console</span>
+    <button id="cclr" title="clear console">
+      <svg viewBox="0 0 24 24" width="24" height="24">
+        <path d="M11.197 2.44a1.5 1.5 0 0 1 2.121 0l4.243 4.242a1.5 1.5 0 0 1 0 2.121L9.364 17H14.5a.5.5 0 1 1 0 1H7.82a1.5 1.5 0 0 1-1.14-.437L2.437 13.32a1.5 1.5 0 0 1 0-2.121zM9.781 15.168l-4.95-4.95l-1.687 1.687a.5.5 0 0 0 0 .707l4.243 4.243a.5.5 0 0 0 .707 0z"/>
+      </svg>
+    </button>
+  </div>
+  <pre id="consoleview"></pre>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/lua/lua.min.js"></script>
+<script>
+const ed = CodeMirror.fromTextArea(document.getElementById('editor'), {
+  mode: 'lua', theme: 'default', lineNumbers: true,
+  indentUnit: 2, tabSize: 2, lineWrapping: true,
+  extraKeys: { 'Ctrl-Enter': () => run() }
+})
+const consoleview = document.getElementById('consoleview')
+const runbtn = document.getElementById('runbtn')
+const clrbtn = document.getElementById('clrbtn')
+const cclr = document.getElementById('cclr')
+const keydisp = document.getElementById('keydisp')
+const newkeybtn = document.getElementById('newkeybtn')
+const toast = document.getElementById('toast')
+const tavatar = document.getElementById('tavatar')
+const tdisplay = document.getElementById('tdisplay')
+const tuser = document.getElementById('tuser')
+let seenseq = 0
+let to = null
+
+function gen() {
+  const c = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  const a = new Uint32Array(14)
+  crypto.getRandomValues(a)
+  const p = (n, o) => { let s = ''; for (let i = 0; i < n; i++) s += c[a[o + i] % c.length]; return s }
+  return p(3, 0) + '-' + p(2, 3) + '-' + p(4, 5) + '-' + p(2, 9) + '-' + p(3, 11)
+}
+
+function loadkey() {
+  let k = localStorage.getItem('luaumcp_key')
+  if (!k) { k = gen(); localStorage.setItem('luaumcp_key', k) }
+  return k
+}
+
+function setkey(k) {
+  localStorage.setItem('luaumcp_key', k)
+  keydisp.textContent = k
+}
+
+let key = loadkey()
+keydisp.textContent = key
+
+function addlog(text, type) {
+  const t = new Date()
+  const ts = '[' + String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0') + ':' + String(t.getSeconds()).padStart(2,'0') + ']'
+  const el = document.createElement('div')
+  el.className = 'lentry ' + (type || 'output')
+  el.innerHTML = '<span class="ts">' + ts + '</span> ' + text.replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  consoleview.appendChild(el)
+  el.scrollIntoView()
+}
+
+function shownotification(name, display, id) {
+  tavatar.src = '/api/avatar?userid=' + id
+  tdisplay.textContent = display
+  tuser.textContent = '@' + name
+  toast.className = 'show'
+  if (to) clearTimeout(to)
+  to = setTimeout(() => {
+    toast.className = ''
+    to = null
+  }, 5000)
+}
+
+function run() {
+  const val = ed.getValue().trim()
+  if (!val) return
+
+  fetch('/api/code', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: val, key: key })
+  }).then(r => r.json()).then(d => {
+    if (!d.id) { addlog('submit failed', 'error'); return }
+    addlog('submitted (id=' + d.id + ')', 'info')
+    const id = d.id
+    const iv = setInterval(() => {
+      fetch('/api/code?id=' + id + '&key=' + encodeURIComponent(key))
+        .then(r => r.json())
+        .then(pd => {
+          if (pd.status === 'done') {
+            clearInterval(iv)
+            addlog('result: ' + (pd.output || '(empty)'), pd.success ? 'output' : 'error')
+          }
+        })
+    }, 500)
+  }).catch(e => addlog('error: ' + e.message, 'error'))
+}
+
+fetch('/api/log?key=' + encodeURIComponent(key)).then(r => r.json()).then(d => {
+  if (d.seq) seenseq = d.seq
+}).catch(() => {})
+
+setInterval(() => {
+  fetch('/api/log?key=' + encodeURIComponent(key)).then(r => r.json()).then(d => {
+    if (!d.logs) return
+    for (const e of d.logs) {
+      if (e.s <= seenseq) continue
+      if (e.type === 'join') {
+        try {
+          const info = JSON.parse(e.text)
+          shownotification(info.name, info.display, info.id)
+        } catch(_) {}
+      } else {
+        addlog(e.text, e.type || 'output')
+      }
+      if (e.s > seenseq) seenseq = e.s
+    }
+  }).catch(() => {})
+}, 300)
+
+keydisp.addEventListener('click', () => {
+  navigator.clipboard.writeText(key)
+  const orig = keydisp.textContent
+  keydisp.textContent = 'copied!'
+  keydisp.style.filter = 'none'
+  setTimeout(() => { keydisp.textContent = orig; keydisp.style.filter = '' }, 1000)
+})
+cclr.addEventListener('click', () => {
+  consoleview.innerHTML = ''
+  fetch('/api/log?key=' + encodeURIComponent(key)).then(r => r.json()).then(d => {
+    if (d.seq) seenseq = d.seq
+  }).catch(() => {})
+})
+clrbtn.addEventListener('click', () => { ed.setValue('') })
+runbtn.addEventListener('click', run)
+newkeybtn.addEventListener('click', () => {
+  key = gen()
+  setkey(key)
+})
+</script>
+</body>
+</html>
